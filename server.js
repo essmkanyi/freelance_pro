@@ -35,6 +35,9 @@ app.post('/register', (req, res) => {
 app.post('/index', (req, res) => {
     res.render('index', { name: 'Freelance Pro' });
 });
+app.post('/events', (req, res) => {
+    res.render('events', { name: 'Freelance Pro' });
+});
 
 // Start the server
 app.listen(port, () => {
