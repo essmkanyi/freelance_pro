@@ -6,10 +6,24 @@ var bodyParser = require('body-parser');
 const app = express();
 const port = 3000;
 
-
-// Set EJS as the view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// MySQL connection configuration
+const db = mysql.createConnection({
+  host: 'localhost', 
+  user: 'root', 
+  password: '', 
+  database: 'freelancepro'
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('Error connecting to MySQL:', err);
+    return;
+  }
+  console.log('Connected to MySQL database');
+});
 
 // Serve static files (e.g., CSS, images)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -29,9 +43,41 @@ app.get('/forgot-password', (req, res) => {
     res.render('forgot-password', { name: 'Freelance Pro' });
 });
 app.post('/register', (req, res) => {
-    res.render('register', { name: 'Freelance Pro' });
-    console.log(req.body)
+    console.log(req.body);
+
+    // Variable initialization
+    const username = req.body.Username
+    const email = req.body.Email
+    const password = req.body.Password
+    const confirmpassword = req.body.confirmPassword
+
+    if (!username || !email || !password || password !== confirmpassword || password.length < 8) {
+      return res.status(400).json({ message: 'Invalid registration data.' });
+    }
+    if (password.length >= 8 && password === confirmpassword) {
+      console.log('You are good to go!');
+
+      const insertQuery = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
+  db.query(insertQuery, [username, email, password], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: 'There is an error inserting the data to the database.' });
+    }
+
+    // return res.json({ message: 'Registration successful!' });
+    res.render('login', { name: 'Registration successful, please proceed to sign in' });
+
+  });
+
+    } else {
+      console.error('Oops, password mismatch!');
+    }
+
+    
+    // ToDo: Do Validations
+    // Insert to Db
+    // Render Index
 });
+
 app.post('/index', (req, res) => {
     res.render('index', { name: 'Freelance Pro' });
 });
