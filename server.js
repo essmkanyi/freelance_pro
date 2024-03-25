@@ -159,7 +159,6 @@ app.get("/client-profile", async (req, res) => {
   }
 });
 
-
 app.get("/projects", async (req, res) => {
   try {
     const [rows] = await dbFreelance.execute("SELECT * FROM `projects`");
@@ -193,7 +192,6 @@ app.get("/project-view", async (req, res) => {
       [project_id]
     );
 
-
     const project_name = rows[0].project_name;
     const project_status = rows[0].project_status;
     const start_date = rows[0].start_date;
@@ -206,7 +204,8 @@ app.get("/project-view", async (req, res) => {
     // Calculate percentage completion
     const totalTasks = rows2[0].total_tasks;
     const completedTasks = rows2[0].completed_tasks;
-    const percentageCompletion = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    const percentageCompletion =
+      totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
     res.render("project-view", {
       name: "Freelance Pro",
@@ -220,14 +219,13 @@ app.get("/project-view", async (req, res) => {
       rate_details: rate_details,
       priority: priority,
       description: description,
-      percentageCompletion: percentageCompletion // Pass percentage completion to the template
+      percentageCompletion: percentageCompletion, // Pass percentage completion to the template
     });
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
   }
 });
-
 
 app.get("/tasks", async (req, res) => {
   try {
@@ -278,6 +276,55 @@ app.get("/task-board", async (req, res) => {
     res.render("task-board", {
       name: "Freelance Pro",
       tasks: rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.get("/invoice-view", async (req, res) => {
+  const {
+    itemDetails,
+    client,
+    project,
+    tax,
+    email,
+    client_address,
+    billing_address,
+    invoice_date,
+    due_date,
+  } = req.query;
+
+  try {
+    const [rows] = await dbFreelance.execute("SELECT * FROM `invoices`");
+
+    // Assuming you have fetched the invoice ID from the database and stored it in a variable called invoiceIdFromDb
+
+    // Get today's date
+    const today = new Date();
+    const month = today.getMonth() + 1; // Adding 1 because getMonth() returns zero-based index
+    const year = today.getFullYear();
+
+    // Format month and year as two-digit strings
+    const formattedMonth = month < 10 ? "0" + month : month.toString();
+    const formattedYear = year.toString().slice(-2); // Get last two digits of the year
+
+    // Concatenate invoice ID from the database with today's month and year
+    const invoice_id = `inv${rows[0].invoice_id}-${formattedMonth}${formattedYear}`;
+
+    res.render("invoice-view", {
+      name: "Freelance Pro",
+      invoice_id: invoice_id,
+      items: itemDetails,
+      client: client,
+      project: project,
+      tax: tax,
+      email: email,
+      client_address: client_address,
+      billing_address: billing_address,
+      invoice_date: invoice_date,
+      due_date: due_date,
     });
   } catch (error) {
     console.error(error);
@@ -386,6 +433,48 @@ app.post("/create/task", (req, res) => {
     if (error) {
       console.error(error);
     }
+  }
+});
+
+// New Invoice
+app.post("/create/invoice", async (req, res) => {
+  console.log(req.body);
+  const {
+    itemDetails,
+    client,
+    project,
+    tax,
+    email,
+    client_address,
+    billing_address,
+    invoice_date,
+    due_date,
+  } = req.body;
+
+  try {
+    // Serialize itemDetails into JSON string
+    const serializedItemDetails = JSON.stringify(itemDetails);
+
+    const sql =
+      "INSERT INTO invoices (client_id, project_id, email, tax, client_address, billing_address, invoice_date, due_date, item) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    await dbFreelance.execute(sql, [
+      client,
+      project,
+      email,
+      tax,
+      client_address,
+      billing_address,
+      invoice_date,
+      due_date,
+      serializedItemDetails, // Insert serialized itemDetails
+    ]);
+
+    res.status(200).json({
+      status: `Project details submitted successfully!`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
