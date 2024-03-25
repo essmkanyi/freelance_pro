@@ -1,121 +1,404 @@
-const express = require('express');
-const path = require('path');
-const mysql = require('mysql');
-var bodyParser = require('body-parser');
+const express = require("express");
+const path = require("path");
+const session = require("express-session");
+const axios = require("axios");
+const dotenv = require("dotenv");
+dotenv.config();
+const mysql = require("mysql2");
+const bodyParser = require("body-parser");
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 
 const app = express();
 const port = 3000;
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+// Set up EJS as the view engine
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
 
-// MySQL connection configuration
-const db = mysql.createConnection({
-  host: 'localhost', 
-  user: 'root', 
-  password: '', 
-  database: 'freelancepro'
-});
+// Serve static files (CSS, JavaScript, etc.)
+app.use(express.static(path.join(__dirname, "public")));
 
-db.connect((err) => {
-  if (err) {
-    console.error('Error connecting to MySQL:', err);
-    return;
-  }
-  console.log('Connected to MySQL database');
-});
+app.use("/assets", express.static("assets"));
+app.use(express.static("views"));
 
-// Serve static files (e.g., CSS, images)
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/assets',express.static("assets"));
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+// Parse URL-encoded bodies (e.g., form data)
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Define a simple route
-app.get('/', (req, res) => {
-    res.render('login', { name: 'Freelance Pro' });
-});
-app.get('/register', (req, res) => {
-    res.render('register', { name: 'Freelance Pro' });
-});
-app.get('/forgot-password', (req, res) => {
-    res.render('forgot-password', { name: 'Freelance Pro' });
-});
-app.post('/register', (req, res) => {
-    console.log(req.body);
+// Parse JSON bodies
+app.use(bodyParser.json());
 
-    // Variable initialization
-    const username = req.body.Username
-    const email = req.body.Email
-    const password = req.body.Password
-    const confirmpassword = req.body.confirmPassword
+// Set up sessions
+app.use(
+  session({
+    secret: "your_secret_key", // Change this to a more secure key
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 30 * 60 * 1000 }, // 30 minutes
+  })
+);
 
-    if (!username || !email || !password || password !== confirmpassword || password.length < 8) {
-      return res.status(400).json({ message: 'Invalid registration data.' });
-    }
-    if (password.length >= 8 && password === confirmpassword) {
-      console.log('You are good to go!');
+// Middleware to check if user is authenticated
+const isAuthenticated = (req, res, next) => {
+  if (req.session && req.session.user) {
+    return next();
+  } else {
+    res.redirect("/login");
+  }
+};
 
-      const insertQuery = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
-  db.query(insertQuery, [username, email, password], (err, results) => {
-    if (err) {
-      return res.status(500).json({ message: 'There is an error inserting the data to the database.' });
-    }
+const createDbPool = (databaseName) =>
+  mysql
+    .createPool({
+      host: "localhost",
+      user: "root",
+      password: "",
+      database: databaseName,
+    })
+    .promise();
 
-    // return res.json({ message: 'Registration successful!' });
-    res.render('login', { name: 'Registration successful, please proceed to sign in' });
+const dbFreelance = createDbPool("freelancepro");
 
+// Routes
+app.get("/", isAuthenticated, (req, res) => {
+  // console.log(req.session);
+  res.render("home", {
+    username: req.session.user.name,
+    email: req.session.user.username,
   });
+});
 
-    } else {
-      console.error('Oops, password mismatch!');
+app.get("/login", (req, res) => {
+  res.render("login", { name: "Freelance Pro" });
+});
+
+app.get("/index", (req, res) => {
+  res.render("index", { name: "Freelance Pro" });
+});
+
+app.get("/events", (req, res) => {
+  res.render("events", { name: "Freelance Pro" });
+});
+
+app.get("/contacts", (req, res) => {
+  res.render("contacts", { name: "Freelance Pro" });
+});
+
+app.get("/clients", async (req, res) => {
+  try {
+    const [rows] = await dbFreelance.execute("SELECT * FROM `clients`");
+
+    const company = rows[0].company_name;
+    const fname = rows[0].first_name;
+    const lname = rows[0].last_name;
+    const username = rows[0].username;
+    const email = rows[0].email;
+    const phone = rows[0].phone;
+
+    res.render("clients", {
+      name: "Freelance Pro",
+      clients: rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.get("/clients-list", (req, res) => {
+  res.render("clients-list", { name: "Freelance Pro" });
+});
+
+app.get("/client-profile", async (req, res) => {
+  const client_id = req.query.client_id;
+
+  try {
+    const [rows] = await dbFreelance.execute(
+      "SELECT * FROM `projects` WHERE `client_id` = ?",
+      [client_id]
+    );
+
+    const [rows2] = await dbFreelance.execute(
+      "SELECT * FROM `clients` WHERE `client_id` = ?",
+      [client_id]
+    );
+
+    const company = rows2[0].company_name;
+    const fname = rows2[0].first_name;
+    const lname = rows2[0].last_name;
+    const username = rows2[0].username;
+    const email = rows2[0].email;
+    const phone = rows2[0].phone;
+
+    let projects = [];
+    let tasks = [];
+
+    if (rows.length > 0) {
+      const [rows3] = await dbFreelance.execute(
+        "SELECT * FROM `tasks` WHERE `project_id` = ?",
+        [rows[0].project_id]
+      );
+      projects = rows;
+      tasks = rows3;
     }
 
-    
-    // ToDo: Do Validations
-    // Insert to Db
-    // Render Index
+    res.render("client-profile", {
+      name: "Freelance Pro",
+      projects: projects,
+      tasks: tasks,
+      company: company,
+      fname: fname,
+      lname: lname,
+      username: username,
+      email: email,
+      phone: phone,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-app.post('/index', (req, res) => {
-    res.render('index', { name: 'Freelance Pro' });
+
+app.get("/projects", async (req, res) => {
+  try {
+    const [rows] = await dbFreelance.execute("SELECT * FROM `projects`");
+
+    res.render("projects", {
+      name: "Freelance Pro",
+      projects: rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 });
-app.post('/events', (req, res) => {
-    res.render('events', { name: 'Freelance Pro' });
+
+app.get("/project-view", async (req, res) => {
+  const project_id = req.query.id;
+
+  try {
+    const [rows] = await dbFreelance.execute(
+      "SELECT * FROM `projects` WHERE `project_id` = ?",
+      [project_id]
+    );
+
+    const [rows2] = await dbFreelance.execute(
+      "SELECT COUNT(*) AS total_tasks, SUM(CASE WHEN task_status = 'Completed' THEN 1 ELSE 0 END) AS completed_tasks FROM `tasks` WHERE `project_id` = ?",
+      [project_id]
+    );
+
+    const [rows3] = await dbFreelance.execute(
+      "SELECT * FROM `tasks` WHERE `project_id` = ?",
+      [project_id]
+    );
+
+
+    const project_name = rows[0].project_name;
+    const project_status = rows[0].project_status;
+    const start_date = rows[0].start_date;
+    const end_date = rows[0].end_date;
+    const rate = rows[0].rate;
+    const rate_details = rows[0].rate_details;
+    const priority = rows[0].priority;
+    const description = rows[0].description;
+
+    // Calculate percentage completion
+    const totalTasks = rows2[0].total_tasks;
+    const completedTasks = rows2[0].completed_tasks;
+    const percentageCompletion = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+    res.render("project-view", {
+      name: "Freelance Pro",
+      projects: rows,
+      tasks: rows3,
+      project_name: project_name,
+      project_status: project_status,
+      start_date: start_date,
+      end_date: end_date,
+      rate: rate,
+      rate_details: rate_details,
+      priority: priority,
+      description: description,
+      percentageCompletion: percentageCompletion // Pass percentage completion to the template
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+
+app.get("/tasks", async (req, res) => {
+  try {
+    const [rows] = await dbFreelance.execute("SELECT * FROM `tasks`");
+
+    res.render("tasks", {
+      name: "Freelance Pro",
+      tasks: rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.get("/invoices", (req, res) => {
+  res.render("invoices", { name: "Freelance Pro" });
+});
+
+app.get("/create-invoice", async (req, res) => {
+  try {
+    const [rows] = await dbFreelance.execute("SELECT * FROM `clients`");
+    const [rows2] = await dbFreelance.execute("SELECT * FROM `projects`");
+
+    res.render("create-invoice", {
+      name: "Freelance Pro",
+      clients: rows,
+      projects: rows2,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.get("/payments", (req, res) => {
+  res.render("payments", { name: "Freelance Pro" });
+});
+
+app.get("/expenses", (req, res) => {
+  res.render("expenses", { name: "Freelance Pro" });
+});
+
+app.get("/task-board", async (req, res) => {
+  try {
+    const [rows] = await dbFreelance.execute("SELECT * FROM `tasks`");
+
+    res.render("task-board", {
+      name: "Freelance Pro",
+      tasks: rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/index", (req, res) => {
+  res.render("index", { name: "Freelance Pro" });
+});
+
+app.post("/events", (req, res) => {
+  res.render("events", { name: "Freelance Pro" });
+});
+
+// New Client
+app.post("/create/client", (req, res) => {
+  console.log(req.body);
+  const {
+    fname,
+    lname,
+    username,
+    email,
+    password,
+    confirm,
+    clientID,
+    phone,
+    company,
+  } = req.body;
+
+  try {
+    const sql =
+      "INSERT INTO clients (company_name, first_name, last_name, username, email, phone, password) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    dbFreelance.execute(sql, [
+      company,
+      fname,
+      lname,
+      username,
+      email,
+      phone,
+      password,
+    ]);
+
+    res.status(200).json({
+      status: `Client details submitted successfully!`,
+    });
+  } catch (error) {
+    if (error) {
+      console.error(error);
+    }
+  }
+});
+
+// New Project
+app.post("/create/project", (req, res) => {
+  console.log(req.body);
+  const {
+    name,
+    client,
+    start_date,
+    end_date,
+    rate,
+    frequency,
+    priority,
+    description,
+  } = req.body;
+
+  try {
+    const sql =
+      "INSERT INTO projects (project_name, client_id, start_date, end_date, rate, rate_details, priority, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    dbFreelance.execute(sql, [
+      name,
+      "1",
+      start_date,
+      end_date,
+      rate,
+      frequency,
+      priority,
+      description,
+    ]);
+
+    res.status(200).json({
+      status: `Project details submitted successfully!`,
+    });
+  } catch (error) {
+    if (error) {
+      console.error(error);
+    }
+  }
+});
+
+// New Task
+app.post("/create/task", (req, res) => {
+  console.log(req.body);
+  const { name, priority, due_date } = req.body;
+
+  try {
+    const sql =
+      "INSERT INTO tasks (task_name, project_id, task_priority, task_deadline) VALUES (?, ?, ?, ?)";
+    dbFreelance.execute(sql, [name, "3", priority, due_date]);
+
+    res.status(200).json({
+      status: `Project details submitted successfully!`,
+    });
+  } catch (error) {
+    if (error) {
+      console.error(error);
+    }
+  }
+});
+
+app.get("/signout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error destroying session:", err);
+    }
+    res.redirect("/login");
+  });
 });
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server listening on http://localhost:${port}`);
-});
-
-
-
-// Create a connection to the database
-const connection = mysql.createConnection({
-  host: 'localhost',        // replace with your database host
-  user: 'root',    // replace with your database username
-  password: '',// replace with your database password
-  database: 'freelancepro' // replace with your database name
-});
-
-// Connect to the database
-connection.connect((err) => {
-  if (err) {
-    console.error('Error connecting to the database:', err);
-    return;
-  }
-  console.log('Connected to the database');
-  
-  // Perform your database operations here
-  
-  // Close the connection when done
-  connection.end((err) => {
-    if (err) {
-      console.error('Error closing the database connection:', err);
-      return;
-    }
-    console.log('Connection closed');
-  });
+  console.log(`Server is running on ${port}`);
 });
