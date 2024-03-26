@@ -14,16 +14,16 @@
         <title>Freelance Pro | Sign Up</title>
 		
 		<!-- Favicon -->
-        <link rel="shortcut icon" type="image/x-icon" href="assets\img\favicon.png">
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/img/favicon.png">
 		
-		<!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="assets\css\bootstrap.min.css">
+		<!-- Bootstrap CSS --> 
+        <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
 		
 		<!-- Fontawesome CSS -->
-        <link rel="stylesheet" href="assets\css\font-awesome.min.css">
+        <link rel="stylesheet" href="/assets/css/font-awesome.min.css">
 		
 		<!-- Main CSS -->
-        <link rel="stylesheet" href="assets\css\style.css">
+        <link rel="stylesheet" href="/assets/css/style.css">
 		
 		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 		<!--[if lt IE 9]>
@@ -40,7 +40,7 @@
 				
 					<!-- Account Logo -->
 					<div class="account-logo">
-						<a href="/register"><img src="assets\img\logo.png" alt="Freelance Pro"></a>
+						<a href="/register"><img src="/assets/img/logo.png" alt="Freelance Pro"></a>
 					</div>
 					<!-- /Account Logo -->
 					
@@ -53,15 +53,15 @@
 							<form action="/register" method="post">
 								<div class="form-group">
 									<label>Username</label>
-									<input class="form-control" name="Username" id="Username" type="text" required>
+									<input class="form-control" name="username" id="username" type="text" required>
 								</div>
 								<div class="form-group">
 									<label>Email Address</label>
-									<input class="form-control" name="Email" id="Email" type="text" required>
+									<input class="form-control" name="email" id="email" type="text" required>
 								</div>
 								<div class="form-group">
 									<label>Password</label>
-									<input class="form-control" name="Password" id="Password" type="password" required>
+									<input class="form-control" name="password" id="password" type="password" required>
 								</div>
 								<div class="form-group">
 									<label>Confirm Password</label>
@@ -69,8 +69,13 @@
 								</div>
 								<div class="form-group text-center">
 								
-									<button class="btn btn-primary account-btn" type="submit">Sign Up</button>
-								
+									<button
+									id="submit"
+									type="button"
+									class="btn btn-primary submit-btn"
+								  >
+									Submit
+								  </button>								
 								</div>
 								<div class="account-footer">
 									<p>Already have an account? <a href="/">Sign In</a></p>
@@ -85,14 +90,114 @@
 		<!-- /Main Wrapper -->
 		
 		<!-- jQuery -->
-        <script src="assets\js\jquery-3.2.1.min.js"></script>
+        <script src="/assets/js/jquery-3.2.1.min.js"></script>
 		
 		<!-- Bootstrap Core JS -->
-        <script src="assets\js\popper.min.js"></script>
-        <script src="assets\js\bootstrap.min.js"></script>
+        <script src="/assets/js/popper.min.js"></script>
+        <script src="/assets/js/bootstrap.min.js"></script>
 		
 		<!-- Custom JS -->
-		<script src="assets\js\app.js"></script>
+		<script src="/assets/js/app.js"></script>
+
+		<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+
+
+		<script>
+			document.getElementById("submit").addEventListener("click", (event) => {
+			  event.preventDefault(); // Prevent the default form submission behavior
+	  
+			  // Disable the button to prevent double-clicking
+			  event.target.disabled = true;
+	  
+			  const username = document.getElementById("username").value;
+			  const email = document.getElementById("email").value;
+			  const password = document.getElementById("password").value;
+			  const confirm = document.getElementById("confirmPassword").value;
+	  
+			  if (!username || !email || !password || !confirm) {
+				// Handle the case where not all fields are filled out
+				swal("Error!", "Missing fields!", "error").then(() => {
+				  // Enable the button after showing the error message
+				  event.target.disabled = false;
+				});
+				return;
+			  }
+	  
+			  const data = {
+				username: username,
+				email: email,
+				password: password,
+				confirm: confirm,
+				
+			  };
+	  
+			  // Show loading animation
+			  swal({
+				title: "Processing...",
+				content: {
+				  element: "div",
+				  attributes: {
+					id: "loading-animation",
+				  },
+				},
+				buttons: false,
+				closeOnClickOutside: false,
+				closeOnEsc: false,
+			  });
+	  
+			  // Use Axios to submit the form data to the /submit endpoint
+			  // ...
+			  axios
+				.post("/create/account", data)
+				.then(function (response) {
+				  // Hide loading animation
+				  swal.close();
+	  
+				  const successMessage =
+					response.data.status ||
+					"Your request has been submitted successfully.";
+				  swal({
+					title: "Success!",
+					text: successMessage,
+					icon: "success",
+					button: "Close",
+				  }).then(() => {
+					// Clear input fields
+				  //   document.getElementById("topic").value = "";
+				  //   document.getElementById("message").value = "";
+	  
+					// Enable the button after closing the success message
+					event.target.disabled = false;
+	  
+					// Refresh the page
+					location.reload();
+	  
+					// You can also close the modal if necessary
+					// jQuery('#ticketModal').modal('hide');
+				  });
+				})
+				.catch(function (error) {
+				  console.error(error);
+				  // Hide loading animation
+				  swal.close();
+	  
+				  const errorMessage =
+					error.response.data.message ||
+					"An error occurred. Please try again later.";
+				  swal({
+					title: "Error!",
+					text: errorMessage,
+					icon: "error",
+					button: "Close",
+				  }).then(() => {
+					// Enable the button after closing the error message
+					event.target.disabled = false;
+				  });
+				});
+			  // ...
+			});
+		  </script>
 		
     </body>
 </html>

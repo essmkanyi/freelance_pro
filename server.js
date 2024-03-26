@@ -72,6 +72,10 @@ app.get("/login", (req, res) => {
   res.render("login", { name: "Freelance Pro" });
 });
 
+app.get("/register", (req, res) => {
+  res.render("register", { name: "Freelance Pro" });
+});
+
 app.get("/index", (req, res) => {
   res.render("index", { name: "Freelance Pro" });
 });
@@ -286,7 +290,9 @@ app.get("/task-board", async (req, res) => {
 app.get("/invoice-view", async (req, res) => {
   const {
     itemDetails,
+    grandTotal,
     client,
+    clientName,
     project,
     tax,
     email,
@@ -295,6 +301,16 @@ app.get("/invoice-view", async (req, res) => {
     invoice_date,
     due_date,
   } = req.query;
+
+  let data = itemDetails; // Assign itemDetails directly to data
+
+  // Check if data is an array, if not, convert it to an array
+  if (!Array.isArray(data)) {
+    data = [data]; // Convert to an array with a single element
+  }
+
+  console.log(data);
+  console.log(data[0]);
 
   try {
     const [rows] = await dbFreelance.execute("SELECT * FROM `invoices`");
@@ -316,8 +332,10 @@ app.get("/invoice-view", async (req, res) => {
     res.render("invoice-view", {
       name: "Freelance Pro",
       invoice_id: invoice_id,
-      items: itemDetails,
+      grandTotal: grandTotal,
+      data: data, // Pass data as an object property
       client: client,
+      clientName: clientName,
       project: project,
       tax: tax,
       email: email,
@@ -331,6 +349,8 @@ app.get("/invoice-view", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
+
 
 app.post("/index", (req, res) => {
   res.render("index", { name: "Freelance Pro" });
@@ -435,6 +455,76 @@ app.post("/create/task", (req, res) => {
     }
   }
 });
+
+// New User
+app.post("/create/account", async (req, res) => {
+  console.log(req.body);
+  const { username, email, password, confirm } = req.body;
+
+  // Check if password and confirm password match
+  if (password !== confirm) {
+    return res.status(400).json({ status: "Passwords do not match" });
+  }
+
+  try {
+    // Check if email already exists in the database
+    const [existingUsers] = await dbFreelance.execute(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
+
+    // If email already exists, return an error
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ status: "Email already exists" });
+    }
+
+    // If email is unique, proceed with user insertion
+    const sql =
+      "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
+    await dbFreelance.execute(sql, [username, email, password]);
+
+    res.status(200).json({
+      status: "User details submitted successfully!",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: "Internal Server Error" });
+  }
+});
+
+// Login User
+app.post("/login/user", async (req, res) => {
+  console.log(req.body);
+  const { email, password } = req.body;
+
+  try {
+    // Check if user exists in the database
+    const [existingUsers] = await dbFreelance.execute(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
+
+    // If no user found with the given username, return an error
+    if (existingUsers.length === 0) {
+      return res.status(404).json({ status: "User not found" });
+    }
+
+    // Verify if the provided password matches the stored password
+    const user = existingUsers[0];
+    if (password !== user.password) {
+      console.error("Incorrect password")
+      return res.status(401).json({ status: "Incorrect password" });
+    }
+
+    res.redirect("/index");
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: "Internal Server Error" });
+  }
+});
+
+
 
 // New Invoice
 app.post("/create/invoice", async (req, res) => {

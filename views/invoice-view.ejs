@@ -301,7 +301,7 @@
 						<div class="dropdown-menu">
 							<a class="dropdown-item" href="profile.html">My Profile</a>
 							<a class="dropdown-item" href="settings.html">Settings</a>
-							<a class="dropdown-item" href="login.html">Logout</a>
+							<a class="dropdown-item" href="/login">Logout</a>
 						</div>
 					</li>
 				</ul>
@@ -313,7 +313,7 @@
 					<div class="dropdown-menu dropdown-menu-right">
 						<a class="dropdown-item" href="profile.html">My Profile</a>
 						<a class="dropdown-item" href="settings.html">Settings</a>
-						<a class="dropdown-item" href="login.html">Logout</a>
+						<a class="dropdown-item" href="/login">Logout</a>
 					</div>
 				</div>
 				<!-- /Mobile Menu -->
@@ -483,7 +483,7 @@
 							<li class="submenu">
 								<a href="#"><i class="la la-key"></i> <span> Authentication </span> <span class="menu-arrow"></span></a>
 								<ul style="display: none;">
-									<li><a href="login.html"> Login </a></li>
+									<li><a href="/login"> Login </a></li>
 									<li><a href="register.html"> Register </a></li>
 									<li><a href="forgot-password.html"> Forgot Password </a></li>
 									<li><a href="otp.html"> OTP </a></li>
@@ -611,10 +611,9 @@
 										<div class="col-sm-6 m-b-20">
 											<img src="/assets/img/logo.png" class="inv-logo" alt="">
 				 							<ul class="list-unstyled">
-												<li>Dreamguy's Technologies</li>
-												<li>3864 Quiet Valley Lane,</li>
-												<li>Sherman Oaks, CA, 91403</li>
-												<li>GST No:</li>
+												<li>Freelance Pro</li>
+												<li>Nairobi, Kenya</li>
+												<li>00100</li>
 											</ul>
 										</div>
 										<div class="col-sm-6 m-b-20">
@@ -631,24 +630,19 @@
 										<div class="col-sm-6 col-lg-7 col-xl-8 m-b-20">
 											<h5>Invoice to:</h5>
 				 							<ul class="list-unstyled">
-												<li><h5><strong>Barry Cuda</strong></h5></li>
-												<li><span>Global Technologies</span></li>
-												<li>5754 Airport Rd</li>
-												<li>Coosada, AL, 36020</li>
-												<li>United States</li>
-												<li>888-777-6655</li>
-												<li><a href="#">barrycuda@example.com</a></li>
+												<li><h5><strong><%= clientName %></strong></h5></li>
+												<li><%= client_address %></li>												
+												<li><a href="#"><%= email %></a></li>
 											</ul>
 										</div>
 										<div class="col-sm-6 col-lg-5 col-xl-4 m-b-20">
 											<span class="text-muted">Payment Details:</span>
 											<ul class="list-unstyled invoice-payment-details">
-												<li><h5>Total Due: <span class="text-right">$8,750</span></h5></li>
-												<li>Bank name: <span>Profit Bank Europe</span></li>
-												<li>Country: <span>United Kingdom</span></li>
-												<li>City: <span>London E1 8BF</span></li>
-												<li>Address: <span>3 Goodman Street</span></li>
-												<li>IBAN: <span>KFH37784028476740</span></li>
+												<li><h5>Total Due: <span class="text-right">Ksh. <%= grandTotal %></span></h5></li>
+												<li>Bank name: <span>NCBA Bank</span></li>
+												<li>Country: <span>Kenya</span></li>
+												<li>City: <span>Nairobi</span></li>
+												<li>Account No: <span>2673199383</span></li>
 												<li>SWIFT code: <span>BPT4E</span></li>
 											</ul>
 										</div>
@@ -666,48 +660,19 @@
 												</tr>
 											</thead>
 											<tbody>
-												<tr>
-													<td>1</td>
-													<td>Android Application</td>
-													<td class="d-none d-sm-table-cell">Lorem ipsum dolor sit amet, consectetur adipiscing elit</td>
-													<td>$1000</td>
-													<td>2</td>
-													<td class="text-right">$2000</td>
-												</tr>
-												<tr>
-													<td>2</td>
-													<td>Ios Application</td>
-													<td class="d-none d-sm-table-cell">Lorem ipsum dolor sit amet, consectetur adipiscing elit</td>
-													<td>$1750</td>
-													<td>1</td>
-													<td class="text-right">$1750</td>
-												</tr>
-												<tr>
-													<td>3</td>
-													<td>Codeigniter Project</td>
-													<td class="d-none d-sm-table-cell">Lorem ipsum dolor sit amet, consectetur adipiscing elit</td>
-													<td>$90</td>
-													<td>3</td>
-													<td class="text-right">$270</td>
-												</tr>
-												<tr>
-													<td>4</td>
-													<td>Phonegap Project</td>
-													<td class="d-none d-sm-table-cell">Lorem ipsum dolor sit amet, consectetur adipiscing elit</td>
-													<td>$1200</td>
-													<td>2</td>
-													<td class="text-right">$2400</td>
-												</tr>
-												<tr>
-													<td>5</td>
-													<td>Website Optimization</td>
-													<td class="d-none d-sm-table-cell">Lorem ipsum dolor sit amet, consectetur adipiscing elit</td>
-													<td>$200</td>
-													<td>2</td>
-													<td class="text-right">$400</td>
-												</tr>
+												<% data.forEach(function(item, index) { %>
+													<tr>
+														<td><%= index + 1 %></td>
+														<td><%= item.description %></td>
+														<td class="d-none d-sm-table-cell"><%= item.unitCost %></td>
+														<td><%= item.quantity %></td>
+														<td class="text-right"><%= item.amount %></td>
+													</tr>
+												<% }); %>
 											</tbody>
 										</table>
+										
+										
 									</div>
 									<div>
 										<div class="row invoice-payment">
@@ -720,15 +685,15 @@
 															<tbody>
 																<tr>
 																	<th>Subtotal:</th>
-																	<td class="text-right">$7,000</td>
+																	<td class="text-right">Ksh. <%= grandTotal %></td>
 																</tr>
 																<tr>
-																	<th>Tax: <span class="text-regular">(25%)</span></th>
-																	<td class="text-right">$1,750</td>
+																	<th>Tax: <span class="text-regular">(16%)</span></th>
+																	<td class="text-right">Ksh. 0</td>
 																</tr>
 																<tr>
 																	<th>Total:</th>
-																	<td class="text-right text-primary"><h5>$8,750</h5></td>
+																	<td class="text-right text-primary"><h5>Ksh. <%= grandTotal %></h5></td>
 																</tr>
 															</tbody>
 														</table>
@@ -736,10 +701,7 @@
 												</div>
 											</div>
 										</div>
-										<div class="invoice-info">
-											<h5>Other information</h5>
-											<p class="text-muted">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus sed dictum ligula, cursus blandit risus. Maecenas eget metus non tellus dignissim aliquam ut a ex. Maecenas sed vehicula dui, ac suscipit lacus. Sed finibus leo vitae lorem interdum, eu scelerisque tellus fermentum. Curabitur sit amet lacinia lorem. Nullam finibus pellentesque libero, eu finibus sapien interdum vel</p>
-										</div>
+										
 									</div>
 								</div>
 							</div>
