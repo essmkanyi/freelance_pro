@@ -282,9 +282,8 @@
                             </a>
                         </div>
                     </div>
-                    <h4 class="project-title">
-                        <a href="/project-view"><%= project.project_name %></a>
-                    </h4>
+                    <h4 class="project-title"><a href="/project-view?id=<%= project.project_id %>"><%= project.project_name %></a></h4>
+
                     <small class="block text-ellipsis m-b-15">
                         <span class="text-xs"><%= project.open_tasks %></span>
                         <span class="text-muted">open tasks, </span>

@@ -199,7 +199,7 @@
 								<div class="card-body">
 									<span class="dash-widget-icon"><i class="fa fa-cubes"></i></span>
 									<div class="dash-widget-info">
-										<h3>112</h3>
+										<h3><%= projects %></h3>
 										<span>Overall Projects</span>
 									</div>
 								</div>
@@ -210,7 +210,7 @@
 								<div class="card-body">
 									<span class="dash-widget-icon"><i class="fa fa-user"></i></span>
 									<div class="dash-widget-info">
-										<h3>44</h3>
+										<h3><%= clients %></h3>
 										<span>Clients Served</span>
 									</div>
 								</div>
@@ -221,7 +221,7 @@
 								<div class="card-body">
 									<span class="dash-widget-icon"><i class="fa fa-diamond"></i></span>
 									<div class="dash-widget-info">
-										<h3>37</h3>
+										<h3><%= tasks %></h3>
 										<span>Tasks Open</span>
 									</div>
 								</div>
@@ -232,7 +232,7 @@
 								<div class="card-body">
 									<span class="dash-widget-icon"><i class="fa fa-usd"></i></span>
 									<div class="dash-widget-info">
-										<h3>44</h3>
+										<h3><%= invoices %></h3>
 										<span>Invoices Generated</span>
 									</div>
 								</div>
@@ -386,39 +386,35 @@
 												</tr>
 											</thead>
 											<tbody>
+												<% if (invoice_list.length != 0) {
+													var i = 1;
+													invoice_list.forEach(function(data) {
+													%>
+
 												<tr>
-													<td><a href="invoice-view.html">#INV-0001</a></td>
+													<td><a href="invoice-view.html"><%= data.invoice_id %></a></td>
 													<td>
 														<h2><a href="#">Global Technologies</a></h2>
 													</td>
-													<td>11 Mar 2019</td>
-													<td>$380</td>
+													<td><%= data.due_date %></td>
+													<td>Ksh. <%= data.other_info ? data.other_info : '0' %></td>
 													<td>
-														<span class="badge bg-inverse-warning">Partially Paid</span>
-													</td>
+														<% if (data.payment_status === 'Pending') { %>
+														  <span class="badge bg-inverse-warning"><%= data.payment_status %></span>
+														<% } else if (data.payment_status === 'Paid') { %>
+														  <span class="badge bg-inverse-success"><%= data.payment_status %></span>
+														<% } else { %>
+														  <!-- Default badge if neither "Pending" nor "Paid" -->
+														  <span class="badge bg-primary"><%= data.payment_status %></span>
+														<% } %>
+													  </td>
 												</tr>
-												<tr>
-													<td><a href="invoice-view.html">#INV-0002</a></td>
-													<td>
-														<h2><a href="#">Delta Infotech</a></h2>
-													</td>
-													<td>8 Feb 2019</td>
-													<td>$500</td>
-													<td>
-														<span class="badge bg-inverse-success">Paid</span>
-													</td>
-												</tr>
-												<tr>
-													<td><a href="invoice-view.html">#INV-0003</a></td>
-													<td>
-														<h2><a href="#">Cream Inc</a></h2>
-													</td>
-													<td>23 Jan 2019</td>
-													<td>$60</td>
-													<td>
-														<span class="badge bg-inverse-danger">Unpaid</span>
-													</td>
-												</tr>
+												
+												<%  i++; }) %>
+              <% } else { %> <tr>
+                <td colspan="10" align="center">No Transactions Found</td>
+              </tr>
+              <% } %>
 											</tbody>
 										</table>
 									</div>
@@ -444,17 +440,21 @@
 												</tr>
 											</thead>
 											<tbody>
+												<% if (project_list.length != 0) {
+													var i = 1;
+													project_list.forEach(function(data) {
+													%>
 												<tr>
 													<td>
-														<h2><a href="project-view.html">Office Management</a></h2>
+														<h2><a href="project-view.html"><%= data.project_name %></a></h2>
 														<small class="block text-ellipsis">
-															<span>1</span> <span class="text-muted">open tasks, </span>
-															<span>9</span> <span class="text-muted">tasks completed</span>
+															<!-- <span>1</span> <span class="text-muted">open tasks, </span>
+															<span>9</span> <span class="text-muted">tasks completed</span> -->
 														</small>
 													</td>
 													<td>
 														<div class="progress progress-xs progress-striped">
-															<div class="progress-bar" role="progressbar" data-toggle="tooltip" title="65%" style="width: 65%"></div>
+															<div class="progress-bar" role="progressbar" data-toggle="tooltip" title="<%- progress %>%" style="width: <%- progress %>%"></div>
 														</div>
 													</td>
 													<td class="text-right">
@@ -467,98 +467,13 @@
 														</div>
 													</td>
 												</tr>
-												<tr>
-													<td>
-														<h2><a href="project-view.html">Project Management</a></h2>
-														<small class="block text-ellipsis">
-															<span>2</span> <span class="text-muted">open tasks, </span>
-															<span>5</span> <span class="text-muted">tasks completed</span>
-														</small>
-													</td>
-													<td>
-														<div class="progress progress-xs progress-striped">
-															<div class="progress-bar" role="progressbar" data-toggle="tooltip" title="15%" style="width: 15%"></div>
-														</div>
-													</td>
-													<td class="text-right">
-														<div class="dropdown dropdown-action">
-															<a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="material-icons">more_vert</i></a>
-															<div class="dropdown-menu dropdown-menu-right">
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-pencil m-r-5"></i> Edit</a>
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-trash-o m-r-5"></i> Delete</a>
-															</div>
-														</div>
-													</td>
-												</tr>
-												<tr>
-													<td>
-														<h2><a href="project-view.html">Video Calling App</a></h2>
-														<small class="block text-ellipsis">
-															<span>3</span> <span class="text-muted">open tasks, </span>
-															<span>3</span> <span class="text-muted">tasks completed</span>
-														</small>
-													</td>
-													<td>
-														<div class="progress progress-xs progress-striped">
-															<div class="progress-bar" role="progressbar" data-toggle="tooltip" title="49%" style="width: 49%"></div>
-														</div>
-													</td>
-													<td class="text-right">
-														<div class="dropdown dropdown-action">
-															<a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="material-icons">more_vert</i></a>
-															<div class="dropdown-menu dropdown-menu-right">
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-pencil m-r-5"></i> Edit</a>
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-trash-o m-r-5"></i> Delete</a>
-															</div>
-														</div>
-													</td>
-												</tr>
-												<tr>
-													<td>
-														<h2><a href="project-view.html">Hospital Administration</a></h2>
-														<small class="block text-ellipsis">
-															<span>12</span> <span class="text-muted">open tasks, </span>
-															<span>4</span> <span class="text-muted">tasks completed</span>
-														</small>
-													</td>
-													<td>
-														<div class="progress progress-xs progress-striped">
-															<div class="progress-bar" role="progressbar" data-toggle="tooltip" title="88%" style="width: 88%"></div>
-														</div>
-													</td>
-													<td class="text-right">
-														<div class="dropdown dropdown-action">
-															<a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="material-icons">more_vert</i></a>
-															<div class="dropdown-menu dropdown-menu-right">
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-pencil m-r-5"></i> Edit</a>
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-trash-o m-r-5"></i> Delete</a>
-															</div>
-														</div>
-													</td>
-												</tr>
-												<tr>
-													<td>
-														<h2><a href="project-view.html">Digital Marketplace</a></h2>
-														<small class="block text-ellipsis">
-															<span>7</span> <span class="text-muted">open tasks, </span>
-															<span>14</span> <span class="text-muted">tasks completed</span>
-														</small>
-													</td>
-													<td>
-														<div class="progress progress-xs progress-striped">
-															<div class="progress-bar" role="progressbar" data-toggle="tooltip" title="100%" style="width: 100%"></div>
-														</div>
-													</td>
-													<td class="text-right">
-														<div class="dropdown dropdown-action">
-															<a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="material-icons">more_vert</i></a>
-															<div class="dropdown-menu dropdown-menu-right">
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-pencil m-r-5"></i> Edit</a>
-																<a class="dropdown-item" href="javascript:void(0)"><i class="fa fa-trash-o m-r-5"></i> Delete</a>
-															</div>
-														</div>
-													</td>
-												</tr>
+												
+
+												<%  i++; }) %>
+              <% } else { %> <tr>
+                <td colspan="10" align="center">No Transactions Found</td>
+              </tr>
+              <% } %>
 											</tbody>
 										</table>
 									</div>

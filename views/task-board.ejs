@@ -208,9 +208,9 @@
 								<div class="pro-progress-bar">
 									<h4>Progress</h4>
 									<div class="progress">
-										<div class="progress-bar bg-success" role="progressbar" style="width: 20%"></div>
+										<div class="progress-bar bg-success" role="progressbar" style="width: <%- progress %>%"></div>
 									</div>
-									<span>20%</span>
+									<span><%= progress %>%</span>
 								</div>
 							</div>
 						</div>
@@ -715,76 +715,102 @@
     </script>
 
 <script>
-	
+    // Function to generate kanban list HTML
+    function generateKanbanList(listTitle, tasks) {
+        var kanbanList = document.createElement('div');
+        kanbanList.classList.add('kanban-list');
+        kanbanList.classList.add('kanban-info');
 
-	// Function to generate kanban list HTML
-function generateKanbanList(listTitle, tasks) {
-    var kanbanList = document.createElement('div');
-    kanbanList.classList.add('kanban-list');
-    kanbanList.classList.add('kanban-info');
+        var kanbanHeader = document.createElement('div');
+        kanbanHeader.classList.add('kanban-header');
+        kanbanHeader.style.backgroundColor = getStatusColor(listTitle); // Set header color based on status
+        var statusTitle = document.createElement('span');
+        statusTitle.classList.add('status-title');
+        statusTitle.textContent = listTitle;
+        kanbanHeader.appendChild(statusTitle);
+        kanbanList.appendChild(kanbanHeader);
 
-    var kanbanHeader = document.createElement('div');
-    kanbanHeader.classList.add('kanban-header');
-    var statusTitle = document.createElement('span');
-    statusTitle.classList.add('status-title');
-    statusTitle.textContent = listTitle;
-    kanbanHeader.appendChild(statusTitle);
-    kanbanList.appendChild(kanbanHeader);
+        var kanbanWrap = document.createElement('div');
+        kanbanWrap.classList.add('kanban-wrap');
+        tasks.forEach(function(task) {
+            var cardPanel = document.createElement('div');
+            cardPanel.classList.add('card');
+            cardPanel.classList.add('panel');
+            var kanbanBox = document.createElement('div');
+            kanbanBox.classList.add('kanban-box');
 
-    var kanbanWrap = document.createElement('div');
-    kanbanWrap.classList.add('kanban-wrap');
-    tasks.forEach(function(task) {
-        var cardPanel = document.createElement('div');
-        cardPanel.classList.add('card');
-        cardPanel.classList.add('panel');
-        var kanbanBox = document.createElement('div');
-        kanbanBox.classList.add('kanban-box');
+            // Generate task HTML here using task details
+            var taskTitle = document.createElement('span');
+            taskTitle.textContent = task.task_name;
+            var taskProgress = document.createElement('div');
+            taskProgress.textContent = 'Deadline: ' + task.task_deadline;
+            // Add more elements for other task details
 
-        // Generate task HTML here using task details
-        var taskTitle = document.createElement('span');
-        taskTitle.textContent = task.task_name;
-        var taskProgress = document.createElement('div');
-        taskProgress.textContent = 'Deadline: ' + task.task_deadline;
-        // Add more elements for other task details
+            // Append task elements to kanbanBox
+            kanbanBox.appendChild(taskTitle);
+            kanbanBox.appendChild(taskProgress);
+            // Append kanbanBox to cardPanel
+            cardPanel.appendChild(kanbanBox);
+            // Append cardPanel to kanbanWrap
+            kanbanWrap.appendChild(cardPanel);
+        });
+        kanbanList.appendChild(kanbanWrap);
 
-        // Append task elements to kanbanBox
-        kanbanBox.appendChild(taskTitle);
-        kanbanBox.appendChild(taskProgress);
-        // Append kanbanBox to cardPanel
-        cardPanel.appendChild(kanbanBox);
-        // Append cardPanel to kanbanWrap
-        kanbanWrap.appendChild(cardPanel);
-    });
-    kanbanList.appendChild(kanbanWrap);
+        var addNewTask = document.createElement('div');
+        addNewTask.classList.add('add-new-task');
+        var addNewTaskLink = document.createElement('a');
+        addNewTaskLink.href = 'javascript:void(0);';
+        addNewTaskLink.setAttribute('data-toggle', 'modal');
+        addNewTaskLink.setAttribute('data-target', '#add_task_modal');
+        addNewTaskLink.textContent = 'Add New Task';
+        addNewTask.appendChild(addNewTaskLink);
+        kanbanList.appendChild(addNewTask);
 
-    var addNewTask = document.createElement('div');
-    addNewTask.classList.add('add-new-task');
-    var addNewTaskLink = document.createElement('a');
-    addNewTaskLink.href = 'javascript:void(0);';
-    addNewTaskLink.setAttribute('data-toggle', 'modal');
-    addNewTaskLink.setAttribute('data-target', '#add_task_modal');
-    addNewTaskLink.textContent = 'Add New Task';
-    addNewTask.appendChild(addNewTaskLink);
-    kanbanList.appendChild(addNewTask);
+        return kanbanList;
+    }
 
-    return kanbanList;
-}
+    // Function to get status color
+    function getStatusColor(status) {
+        var statusColors = {
+            'Not Started': '#ccc',       // Gray color for not started tasks
+            'Pending': '#f0ad4e',        // Yellow color for pending tasks
+            'In Progress': '#5bc0de',    // Blue color for tasks in progress
+            'Completed': '#5cb85c'       // Green color for completed tasks
+        };
+        return statusColors[status] || '#ccc'; // Default color if status not found in mapping
+    }
 
-	// Function to initialize the kanban board
-function initializeKanbanBoard(tasks) {
-    console.log(tasks); // For debugging, you can remove this later
-    var kanbanCont = document.getElementById('kanban-cont');
-    
-    // Iterate through the tasks array directly
-    tasks.forEach(function(task) {
-        var kanbanList = generateKanbanList(task.task_status, [task]); // Pass task as an array to generateKanbanList
-        kanbanCont.appendChild(kanbanList);
-    });
-}
+    // Function to initialize the kanban board
+    function initializeKanbanBoard(tasks) {
+        console.log(tasks); // For debugging, you can remove this later
+        var kanbanCont = document.getElementById('kanban-cont');
 
-	// Call the function to initialize the kanban board
+        // Initialize an object to store tasks grouped by status
+        var tasksByStatus = {
+            'Not Started': [],
+            'Pending': [],
+            'In Progress': [],
+            'Completed': []
+        };
+
+        // Group tasks by status
+        tasks.forEach(function(task) {
+            tasksByStatus[task.task_status].push(task);
+        });
+
+        // Iterate over the grouped tasks and generate kanban lists with respective colors
+        Object.keys(tasksByStatus).forEach(function(status) {
+            var kanbanList = generateKanbanList(status, tasksByStatus[status]);
+            kanbanCont.appendChild(kanbanList);
+        });
+    }
+
+    // Call the function to initialize the kanban board
     initializeKanbanBoard(<%- JSON.stringify(tasks) %>);
 </script>
+
+
+
 		
     </body>
 </html>

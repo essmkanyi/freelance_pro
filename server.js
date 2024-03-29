@@ -76,8 +76,76 @@ app.get("/register", (req, res) => {
   res.render("register", { name: "Freelance Pro" });
 });
 
-app.get("/index", (req, res) => {
-  res.render("index", { name: "Freelance Pro" });
+app.get("/index", async (req, res) => {
+  try {
+    //Total Projects
+    const [projects] = await dbFreelance.execute(
+      "SELECT COUNT(project_id) AS count FROM `projects`"
+    );
+    const total_projects = projects[0].count;
+
+    //Total Clients
+    const [clients] = await dbFreelance.execute(
+      "SELECT COUNT(client_id) AS count FROM `clients`"
+    );
+    const total_clients = clients[0].count;
+
+    //Total tasks
+    const [tasks] = await dbFreelance.execute(
+      "SELECT COUNT(task_id) AS count FROM `tasks` WHERE `task_status` = ?",
+      ["Pending"]
+    );
+    const total_tasks = tasks[0].count;
+
+    //Total invoices
+    const [invoices] = await dbFreelance.execute(
+      "SELECT COUNT(invoice_id) AS count FROM `invoices`"
+    );
+    const total_invoices = invoices[0].count;
+
+    //View invoices
+    const [invoice_list] = await dbFreelance.execute(
+      "SELECT * FROM `invoices`"
+    );
+
+    //View Projects
+    const [project_list] = await dbFreelance.execute(
+      "SELECT * FROM `projects`"
+    );
+
+    // Initialize counters for completed tasks and total tasks
+    let completedTasks = 0;
+    let totalTasks = project_list.length;
+
+    // Iterate through the rows and count completed tasks
+    project_list.forEach((row) => {
+      if (row.project_status === "Completed") {
+        completedTasks++;
+      }
+    });
+
+    // Calculate percentage progress
+    let percentageProgress = 0;
+    if (totalTasks > 0) {
+      percentageProgress = Math.round((completedTasks / totalTasks) * 100); // Round off to the nearest integer
+    }
+
+    console.log(percentageProgress);
+
+    res.render("index", {
+      name: "Freelance Pro",
+      projects: total_projects,
+      clients: total_clients,
+      tasks: total_tasks,
+      invoices: total_invoices,
+      invoice_list: invoice_list,
+      project_list: project_list,
+      progress: percentageProgress,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.get("/events", (req, res) => {
@@ -109,8 +177,10 @@ app.get("/clients", async (req, res) => {
   }
 });
 
-app.get("/clients-list", (req, res) => {
-  res.render("clients-list", { name: "Freelance Pro" });
+app.get("/clients-list", async (req, res) => {
+  const [rows] = await dbFreelance.execute("SELECT * FROM `clients`");
+
+  res.render("clients-list", { name: "Freelance Pro", clients: rows });
 });
 
 app.get("/client-profile", async (req, res) => {
@@ -245,8 +315,21 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-app.get("/invoices", (req, res) => {
-  res.render("invoices", { name: "Freelance Pro" });
+app.get("/invoices", async (req, res) => {
+  try {
+    //View invoices
+    const [invoice_list] = await dbFreelance.execute(
+      "SELECT * FROM `invoices`"
+    );
+
+    res.render("invoices", {
+      name: "Freelance Pro",
+      invoice_list: invoice_list,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.get("/create-invoice", async (req, res) => {
@@ -277,9 +360,27 @@ app.get("/task-board", async (req, res) => {
   try {
     const [rows] = await dbFreelance.execute("SELECT * FROM `tasks`");
 
+    // Initialize counters for completed tasks and total tasks
+    let completedTasks = 0;
+    let totalTasks = rows.length;
+
+    // Iterate through the rows and count completed tasks
+    rows.forEach((row) => {
+      if (row.task_status === "Completed") {
+        completedTasks++;
+      }
+    });
+
+    // Calculate percentage progress
+    let percentageProgress = 0;
+    if (totalTasks > 0) {
+      percentageProgress = Math.round((completedTasks / totalTasks) * 100); // Round off to the nearest integer
+    }
+
     res.render("task-board", {
       name: "Freelance Pro",
       tasks: rows,
+      progress: percentageProgress,
     });
   } catch (error) {
     console.error(error);
@@ -350,11 +451,9 @@ app.get("/invoice-view", async (req, res) => {
   }
 });
 
-
-
-app.post("/index", (req, res) => {
-  res.render("index", { name: "Freelance Pro" });
-});
+// app.post("/index", (req, res) => {
+//   res.render("index", { name: "Freelance Pro" });
+// });
 
 app.post("/events", (req, res) => {
   res.render("events", { name: "Freelance Pro" });
@@ -512,19 +611,16 @@ app.post("/login/user", async (req, res) => {
     // Verify if the provided password matches the stored password
     const user = existingUsers[0];
     if (password !== user.password) {
-      console.error("Incorrect password")
+      console.error("Incorrect password");
       return res.status(401).json({ status: "Incorrect password" });
     }
 
     res.redirect("/index");
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ status: "Internal Server Error" });
   }
 });
-
-
 
 // New Invoice
 app.post("/create/invoice", async (req, res) => {
@@ -539,6 +635,7 @@ app.post("/create/invoice", async (req, res) => {
     billing_address,
     invoice_date,
     due_date,
+    grandTotal,
   } = req.body;
 
   try {
@@ -546,7 +643,7 @@ app.post("/create/invoice", async (req, res) => {
     const serializedItemDetails = JSON.stringify(itemDetails);
 
     const sql =
-      "INSERT INTO invoices (client_id, project_id, email, tax, client_address, billing_address, invoice_date, due_date, item) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      "INSERT INTO invoices (client_id, project_id, email, tax, client_address, billing_address, invoice_date, due_date, item, other_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     await dbFreelance.execute(sql, [
       client,
       project,
@@ -556,8 +653,26 @@ app.post("/create/invoice", async (req, res) => {
       billing_address,
       invoice_date,
       due_date,
-      serializedItemDetails, // Insert serialized itemDetails
+      serializedItemDetails,
+      grandTotal,
     ]);
+
+    res.status(200).json({
+      status: `Project details submitted successfully!`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// DELETE endpoint to delete a client by ID
+app.delete("/clients/:clientId", async (req, res) => {
+  const clientId = parseInt(req.params.clientId);
+
+  try {
+    const sql = "DELETE FROM clients WHERE client_id = ?";
+    await dbFreelance.execute(sql, [clientId]);
 
     res.status(200).json({
       status: `Project details submitted successfully!`,
