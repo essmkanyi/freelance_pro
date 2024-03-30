@@ -435,15 +435,12 @@ app.get("/invoice-view", async (req, res) => {
     due_date,
   } = req.query;
 
-  let data = itemDetails; // Assign itemDetails directly to data
+  // let data = itemDetails; // Assign itemDetails directly to data
 
-  // Check if data is an array, if not, convert it to an array
-  if (!Array.isArray(data)) {
-    data = [data]; // Convert to an array with a single element
-  }
-
-  console.log(data);
-  console.log(data[0]);
+  // // Check if data is an array, if not, convert it to an array
+  // if (!Array.isArray(data)) {
+  //   data = [data]; // Convert to an array with a single element
+  // }
 
   try {
     const [rows] = await dbFreelance.execute("SELECT * FROM `invoices`");
@@ -462,11 +459,17 @@ app.get("/invoice-view", async (req, res) => {
     // Concatenate invoice ID from the database with today's month and year
     const invoice_id = `inv${rows[0].invoice_id}-${formattedMonth}${formattedYear}`;
 
+    const dataArray = Array.isArray(itemDetails) ? itemDetails : [itemDetails];
+    // console.log(itemDetails.itemDetails[0]);
+
+
+
+
     res.render("invoice-view", {
       name: "Freelance Pro",
       invoice_id: invoice_id,
       grandTotal: grandTotal,
-      data: data, // Pass data as an object property
+      data: dataArray, 
       client: client,
       clientName: clientName,
       project: project,
