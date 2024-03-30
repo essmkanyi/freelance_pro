@@ -1,13 +1,11 @@
 const express = require("express");
 const path = require("path");
 const session = require("express-session");
-const axios = require("axios");
 const dotenv = require("dotenv");
 dotenv.config();
 const mysql = require("mysql2");
 const bodyParser = require("body-parser");
-const crypto = require("crypto");
-const bcrypt = require("bcryptjs");
+const PDFDocument = require('pdfkit');
 
 const app = express();
 const port = 3000;
@@ -160,12 +158,6 @@ app.get("/clients", async (req, res) => {
   try {
     const [rows] = await dbFreelance.execute("SELECT * FROM `clients`");
 
-    const company = rows[0].company_name;
-    const fname = rows[0].first_name;
-    const lname = rows[0].last_name;
-    const username = rows[0].username;
-    const email = rows[0].email;
-    const phone = rows[0].phone;
 
     res.render("clients", {
       name: "Freelance Pro",
@@ -388,6 +380,46 @@ app.get("/task-board", async (req, res) => {
   }
 });
 
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Function to generate the content of the invoice as a PDF
+function generateInvoiceContent(client, project, amount) {
+  const doc = new PDFDocument();
+  doc.text(`Invoice Details:`, { underline: true });
+  doc.text(`Client: ${data.client}`);
+  doc.text(`Project: ${data.project}`);
+  doc.text(`Amount: ${data.amount}`);
+  return doc;
+}
+
+// Route to handle download request and generate invoice content as a PDF
+app.get('/download-invoice', (req, res) => {
+  try {
+    const pdfDoc = generateInvoiceContent(client, project, amount);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=invoice.pdf');
+    pdfDoc.pipe(res);
+    pdfDoc.end();
+  } catch (error) {
+    console.error('Error generating invoice', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Function to generate the content of the invoice
+function generateInvoiceContent(data) {
+  // Example: Generate invoice content based on data
+  // You need to implement this function according to your invoice structure and data
+  let invoiceContent = `Invoice Details:\n`;
+  invoiceContent += `Client: ${data.client}\n`;
+  invoiceContent += `Project: ${data.project}\n`;
+  invoiceContent += `Amount: ${data.amount}\n`;
+  // Add more invoice details as needed
+  
+  return invoiceContent;
+}
+
+
 app.get("/invoice-view", async (req, res) => {
   const {
     itemDetails,
@@ -468,8 +500,6 @@ app.post("/create/client", (req, res) => {
     username,
     email,
     password,
-    confirm,
-    clientID,
     phone,
     company,
   } = req.body;
@@ -502,7 +532,6 @@ app.post("/create/project", (req, res) => {
   console.log(req.body);
   const {
     name,
-    client,
     start_date,
     end_date,
     rate,
